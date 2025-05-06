@@ -10,8 +10,6 @@ let gameState = {
   jeCoupeResponses: [],
 };
 
-
-// Function to reset the game
 function resetGame() {
   gameState = {
     players: [],
@@ -27,16 +25,6 @@ function resetGame() {
   console.log('Game has been reset');
 }
 
-// Reset route
-app.post('/api/reset', (req, res) => {
-  try {
-    resetGame(); // Reset the game state
-    res.json({ message: 'Game has been reset, you can start a new game.' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to reset the game.' });
-  }
-});
-// Generate full shared deck with 4 cards of each type
 function generateDeck() {
   const types = ["A", "B", "C", "D"];
   const deck = [];
@@ -47,7 +35,6 @@ function generateDeck() {
     }
   });
 
-  // Shuffle using Fisher-Yates
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -57,7 +44,9 @@ function generateDeck() {
 }
 
 function joinGame(playerName) {
-  if (gameState.players.length >= 4) return { error: "Game is full." };
+  if (gameState.players.length >= 4) {
+    return { error: "Game is full." };
+  }
 
   const id = gameState.players.length + 1;
   gameState.players.push({ id, name: playerName });
@@ -176,4 +165,5 @@ module.exports = {
   jeCoupe,
   setCharade,
   getStatus,
+  resetGame, // ✅ Export the reset function
 };

@@ -1,6 +1,10 @@
 const express = require('express');
+const cors = require('cors');  // Import cors package
 const app = express();
 const { joinGame, startRound, passCard, declareCarré, getStatus } = require('./game');
+
+// Use CORS middleware
+app.use(cors());  // Allows all origins; use app.use(cors({ origin: 'https://your-frontend-domain.com' })) to restrict to specific domain
 
 app.use(express.json()); // For parsing JSON in requests
 

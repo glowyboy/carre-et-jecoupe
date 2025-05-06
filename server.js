@@ -23,6 +23,33 @@ app.post('/api/join', (req, res) => {
   res.json(result);
 });
 
+// Example game data
+let players = [];
+let gameStatus = 'not started'; // or whatever status you're using
+let rounds = [];
+
+// Reset function to clear the game data
+function resetGame() {
+  players = [];
+  gameStatus = 'not started';
+  rounds = [];
+  console.log('Game has been reset');
+}
+
+// Routes
+app.use(cors());
+app.use(express.json());
+
+// Reset API
+app.post('/api/reset', (req, res) => {
+  try {
+    resetGame(); // Reset game data
+    res.json({ message: 'Game has been reset, you can start a new game.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to reset the game.' });
+  }
+});
+
 app.post('/api/start', (req, res) => {
   const result = startRound();
   if (result.error) return res.status(400).json(result);

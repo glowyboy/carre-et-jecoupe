@@ -9,6 +9,18 @@ let gameState = {
   carreDeclaredBy: null,
   jeCoupeResponses: [],
 };
+// Let's assume you have game data stored in the following variables
+let players = [];
+let gameStatus = 'not started'; // or whatever status you're using
+let rounds = [];
+
+// Function to reset the game
+function resetGame() {
+  players = []; // Clear all players
+  gameStatus = 'not started'; // Reset game status
+  rounds = []; // Clear rounds or any other game-specific data
+  console.log('Game has been reset');
+}
 
 // Generate full shared deck with 4 cards of each type
 function generateDeck() {

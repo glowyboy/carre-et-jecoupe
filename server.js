@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+
 const {
   joinGame,
   startRound,
@@ -11,35 +12,49 @@ const {
   jeCoupe,
 } = require('./game');
 
-app.use(cors()); // Allow all origins (adjust for production)
-app.use(express.json()); // Parse JSON
+app.use(cors());
+app.use(express.json());
 
 // Routes
 app.post('/api/join', (req, res) => {
   const { playerName } = req.body;
-  res.json(joinGame(playerName));
+  const result = joinGame(playerName);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
 });
 
-app.post('/api/start', (req, res) => res.json(startRound()));
+app.post('/api/start', (req, res) => {
+  const result = startRound();
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
+});
 
 app.post('/api/pass-card', (req, res) => {
   const { playerId, cardIndex } = req.body;
-  res.json(passCard(playerId, cardIndex));
+  const result = passCard(playerId, cardIndex);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
 });
 
 app.post('/api/declare', (req, res) => {
   const { playerId, charade } = req.body;
-  res.json(declareCarré(playerId, charade));
+  const result = declareCarré(playerId, charade);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
 });
 
 app.post('/api/set-charade', (req, res) => {
   const { teamIndex, charade } = req.body;
-  res.json(setCharade(teamIndex, charade));
+  const result = setCharade(teamIndex, charade);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
 });
 
 app.post('/api/je-coupe', (req, res) => {
   const { playerId } = req.body;
-  res.json(jeCoupe(playerId));
+  const result = jeCoupe(playerId);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
 });
 
 app.get('/api/status', (req, res) => res.json(getStatus()));

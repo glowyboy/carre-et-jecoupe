@@ -6,6 +6,8 @@ let gameState = {
   cards: [],
   roundActive: false,
   winner: null,
+  carreDeclaredBy: null,
+  jeCoupeResponses: [],
 };
 
 // Generate full shared deck with 4 cards of each type
@@ -49,59 +51,51 @@ function startRound() {
     return { error: "Need 4 players." };
 
   gameState.roundActive = true;
+  gameState.carreDeclaredBy = null;
+  gameState.jeCoupeResponses = [];
+  gameState.winner = null;
 
   const deck = generateDeck();
   gameState.cards = [];
 
-  // Deal 4 cards per player
   for (let i = 0; i < 4; i++) {
     gameState.cards.push(deck.splice(0, 4));
   }
 
   gameState.charades = ["Charade A", "Charade B"];
   gameState.currentTurn = 0;
-  gameState.winner = null;
 
-  return { message: "Round started", cards: gameState.cards };
+  return {
+    message: "Round started",
+    cards: gameState.cards,
+    charades: gameState.charades,
+    turn: gameState.players[0].name
+  };
 }
+
 function passCard(playerId, cardIndex) {
   if (!gameState.roundActive) return { error: "No active round." };
-  
+
   const currentTurn = gameState.currentTurn;
   if (gameState.players[currentTurn].id !== playerId)
     return { error: "Not your turn." };
 
-  // Get the card to pass
   const card = gameState.cards[currentTurn].splice(cardIndex, 1)[0];
-  
-  // Determine next player based on the diagram's flow
-  // In your diagram: 1 -> 3 -> 2 -> 4 -> 1 (repeating)
+
   let nextTurn;
-  
-  switch(currentTurn) {
-    case 0: // Player 1 passes to Player 3
-      nextTurn = 2;
-      break;
-    case 1: // Player 2 passes to Player 4
-      nextTurn = 3;
-      break;
-    case 2: // Player 3 passes to Player 2
-      nextTurn = 1;
-      break;
-    case 3: // Player 4 passes to Player 1
-      nextTurn = 0;
-      break;
+  switch (currentTurn) {
+    case 0: nextTurn = 2; break;
+    case 1: nextTurn = 3; break;
+    case 2: nextTurn = 1; break;
+    case 3: nextTurn = 0; break;
   }
-  
-  // Add the card to the next player's hand
+
   gameState.cards[nextTurn].push(card);
-  
-  // Update the current turn
   gameState.currentTurn = nextTurn;
 
   return {
     message: "Card passed",
-    nextTurn: gameState.players[gameState.currentTurn].name
+    nextTurn: gameState.players[nextTurn].name
   };
 }
 
@@ -111,17 +105,37 @@ function declareCarré(playerId, charade) {
   const idx = playerId - 1;
   const cards = gameState.cards[idx];
 
-  if (!cards.every(c => c.type === cards[0].type))
-    return { error: "You don’t have a Carré." };
+  const isCarré = cards.every(c => c.type === cards[0].type);
+  if (!isCarré) return { error: "You don’t have a Carré." };
 
   const teamIdx = idx < 2 ? 0 : 1;
   if (gameState.charades[teamIdx] !== charade)
     return { error: "Wrong charade." };
 
-  gameState.roundActive = false;
-  gameState.winner = gameState.players.find(p => p.id === playerId);
+  gameState.carreDeclaredBy = playerId;
 
-  return { message: `${gameState.winner.name} wins!` };
+  return { message: `Player ${playerId} declared Carré.` };
+}
+
+function jeCoupe(playerId) {
+  if (!gameState.carreDeclaredBy)
+    return { error: "No Carré has been declared yet." };
+
+  if (gameState.jeCoupeResponses.includes(playerId))
+    return { error: "You already responded with Je Coupe." };
+
+  gameState.jeCoupeResponses.push(playerId);
+
+  return { message: `Player ${playerId} responded with Je Coupe.` };
+}
+
+function setCharade(teamIndex, charade) {
+  if (teamIndex !== 0 && teamIndex !== 1)
+    return { error: "Invalid team index." };
+
+  gameState.charades[teamIndex] = charade;
+
+  return { message: `Charade for Team ${teamIndex + 1} set to "${charade}"` };
 }
 
 function getStatus() {
@@ -133,5 +147,7 @@ module.exports = {
   startRound,
   passCard,
   declareCarré,
-  getStatus
+  jeCoupe,
+  setCharade,
+  getStatus,
 };

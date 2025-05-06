@@ -9,19 +9,33 @@ let gameState = {
   carreDeclaredBy: null,
   jeCoupeResponses: [],
 };
-// Let's assume you have game data stored in the following variables
-let players = [];
-let gameStatus = 'not started'; // or whatever status you're using
-let rounds = [];
+
 
 // Function to reset the game
 function resetGame() {
-  players = []; // Clear all players
-  gameStatus = 'not started'; // Reset game status
-  rounds = []; // Clear rounds or any other game-specific data
+  gameState = {
+    players: [],
+    currentTurn: 0,
+    teams: [[], []],
+    charades: [],
+    cards: [],
+    roundActive: false,
+    winner: null,
+    carreDeclaredBy: null,
+    jeCoupeResponses: [],
+  };
   console.log('Game has been reset');
 }
 
+// Reset route
+app.post('/api/reset', (req, res) => {
+  try {
+    resetGame(); // Reset the game state
+    res.json({ message: 'Game has been reset, you can start a new game.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to reset the game.' });
+  }
+});
 // Generate full shared deck with 4 cards of each type
 function generateDeck() {
   const types = ["A", "B", "C", "D"];

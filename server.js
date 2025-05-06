@@ -1,12 +1,18 @@
 const express = require('express');
-const cors = require('cors');  // Import cors package
+const cors = require('cors');
 const app = express();
-const { joinGame, startRound, passCard, declareCarré, getStatus } = require('./game');
+const {
+  joinGame,
+  startRound,
+  passCard,
+  declareCarré,
+  getStatus,
+  setCharade,
+  jeCoupe,
+} = require('./game');
 
-// Use CORS middleware
-app.use(cors());  // Allows all origins; use app.use(cors({ origin: 'https://your-frontend-domain.com' })) to restrict to specific domain
-
-app.use(express.json()); // For parsing JSON in requests
+app.use(cors()); // Allow all origins (adjust for production)
+app.use(express.json()); // Parse JSON
 
 // Routes
 app.post('/api/join', (req, res) => {
@@ -24,6 +30,16 @@ app.post('/api/pass-card', (req, res) => {
 app.post('/api/declare', (req, res) => {
   const { playerId, charade } = req.body;
   res.json(declareCarré(playerId, charade));
+});
+
+app.post('/api/set-charade', (req, res) => {
+  const { teamIndex, charade } = req.body;
+  res.json(setCharade(teamIndex, charade));
+});
+
+app.post('/api/je-coupe', (req, res) => {
+  const { playerId } = req.body;
+  res.json(jeCoupe(playerId));
 });
 
 app.get('/api/status', (req, res) => res.json(getStatus()));

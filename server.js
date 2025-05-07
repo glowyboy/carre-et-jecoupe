@@ -3,72 +3,89 @@ const cors = require('cors');
 const app = express();
 
 const {
+  createRoom,
   joinGame,
   startRound,
   passCard,
   declareCarré,
-  getStatus,
-  setCharade,
   jeCoupe,
-  resetGame, // ✅ Import resetGame from game.js
+  setCharade,
+  resetGame,
+  getStatus,
 } = require('./game');
 
 app.use(cors());
 app.use(express.json());
 
-// API Routes
+// Create Room
+app.post('/api/create-room', (req, res) => {
+  const roomCode = createRoom();
+  res.json({ roomCode });
+});
 
+// Join Room
 app.post('/api/join', (req, res) => {
-  const { playerName } = req.body;
-  const result = joinGame(playerName);
+  const { playerName, roomCode } = req.body;
+  const result = joinGame(roomCode, playerName);
   if (result.error) return res.status(400).json(result);
   res.json(result);
 });
 
+// Reset Room
 app.post('/api/reset', (req, res) => {
-  try {
-    resetGame(); // ✅ Reset the actual game state
-    res.json({ message: 'Game has been reset, you can start a new game.' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to reset the game.' });
-  }
+  const { roomCode } = req.body;
+  const result = resetGame(roomCode);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
 });
 
+// Start Round
 app.post('/api/start', (req, res) => {
-  const result = startRound();
+  const { roomCode } = req.body;
+  const result = startRound(roomCode);
   if (result.error) return res.status(400).json(result);
   res.json(result);
 });
 
 app.post('/api/pass-card', (req, res) => {
-  const { playerId, cardIndex } = req.body;
-  const result = passCard(playerId, cardIndex);
+  const { roomCode, playerId, cardIndex } = req.body;
+  const result = passCard(roomCode, playerId, cardIndex);
   if (result.error) return res.status(400).json(result);
   res.json(result);
 });
 
+
+// Declare Carré
 app.post('/api/declare', (req, res) => {
-  const { playerId, charade } = req.body;
-  const result = declareCarré(playerId, charade);
+  const { roomCode, playerId, charade } = req.body;
+  const result = declareCarré(roomCode, playerId, charade);
   if (result.error) return res.status(400).json(result);
   res.json(result);
 });
 
-app.post('/api/set-charade', (req, res) => {
-  const { teamIndex, charade } = req.body;
-  const result = setCharade(teamIndex, charade);
-  if (result.error) return res.status(400).json(result);
-  res.json(result);
-});
-
+// Je Coupe
 app.post('/api/je-coupe', (req, res) => {
-  const { playerId } = req.body;
-  const result = jeCoupe(playerId);
+  const { roomCode, playerId } = req.body;
+  const result = jeCoupe(roomCode, playerId);
   if (result.error) return res.status(400).json(result);
   res.json(result);
 });
 
-app.get('/api/status', (req, res) => res.json(getStatus()));
+// Set Charade
+app.post('/api/set-charade', (req, res) => {
+  const { roomCode, teamIndex, charade } = req.body;
+  const result = setCharade(roomCode, teamIndex, charade);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
+});
+
+// Get Status
+app.get('/api/status/:roomCode', (req, res) => {
+  const { roomCode } = req.params;
+  const result = getStatus(roomCode);
+  if (result.error) return res.status(404).json(result);
+  res.json(result);
+});
 
 // Start server
 const PORT = process.env.PORT || 3000;

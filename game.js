@@ -1,17 +1,7 @@
-let gameState = {
-  players: [],
-  currentTurn: 0,
-  teams: [[], []],
-  charades: [],
-  cards: [],
-  roundActive: false,
-  winner: null,
-  carreDeclaredBy: null,
-  jeCoupeResponses: [],
-};
+const rooms = {};
 
-function resetGame() {
-  gameState = {
+function createGameState() {
+  return {
     players: [],
     currentTurn: 0,
     teams: [[], []],
@@ -22,7 +12,10 @@ function resetGame() {
     carreDeclaredBy: null,
     jeCoupeResponses: [],
   };
-  console.log('Game has been reset');
+}
+
+function generateRoomCode() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
 function generateDeck() {
@@ -43,127 +36,164 @@ function generateDeck() {
   return deck;
 }
 
-function joinGame(playerName) {
-  if (gameState.players.length >= 4) {
+function createRoom() {
+  const roomCode = generateRoomCode();
+  rooms[roomCode] = createGameState();
+  return roomCode;
+}
+
+function joinGame(roomCode, playerName) {
+  const room = rooms[roomCode];
+  if (!room) return { error: "Room not found." };
+
+  if (room.players.length >= 4) {
     return { error: "Game is full." };
   }
 
-  const id = gameState.players.length + 1;
-  gameState.players.push({ id, name: playerName });
+  const id = room.players.length + 1;
+  room.players.push({ id, name: playerName });
 
-  if (gameState.players.length === 4) {
-    gameState.teams = [
-      [gameState.players[0], gameState.players[1]],
-      [gameState.players[2], gameState.players[3]],
+  if (room.players.length === 4) {
+    const shuffled = [...room.players].sort(() => Math.random() - 0.5);
+    room.players = shuffled;
+    room.teams = [
+      [shuffled[0], shuffled[1]],
+      [shuffled[2], shuffled[3]],
     ];
+    room.currentTurn = Math.floor(Math.random() * 4);
   }
 
-  return { message: `${playerName} joined.`, teams: gameState.teams };
+  return { message: `${playerName} joined.`, teams: room.teams };
 }
 
-function startRound() {
-  if (gameState.players.length < 4)
+function startRound(roomCode) {
+  const room = rooms[roomCode];
+  if (!room) return { error: "Room not found." };
+
+  if (room.players.length < 4)
     return { error: "Need 4 players." };
 
-  gameState.roundActive = true;
-  gameState.carreDeclaredBy = null;
-  gameState.jeCoupeResponses = [];
-  gameState.winner = null;
+  room.roundActive = true;
+  room.carreDeclaredBy = null;
+  room.jeCoupeResponses = [];
+  room.winner = null;
 
   const deck = generateDeck();
-  gameState.cards = [];
+  room.cards = [];
 
   for (let i = 0; i < 4; i++) {
-    gameState.cards.push(deck.splice(0, 4));
+    room.cards.push(deck.splice(0, 4));
   }
 
-  gameState.charades = ["Charade A", "Charade B"];
-  gameState.currentTurn = 0;
+  room.charades = ["Charade A", "Charade B"];
 
   return {
     message: "Round started",
-    cards: gameState.cards,
-    charades: gameState.charades,
-    turn: gameState.players[0].name
+    cards: room.cards,
+    charades: room.charades,
+    turn: room.players[room.currentTurn].name
   };
 }
 
-function passCard(playerId, cardIndex) {
-  if (!gameState.roundActive) return { error: "No active round." };
 
-  const currentTurn = gameState.currentTurn;
-  if (gameState.players[currentTurn].id !== playerId)
+function passCard(roomCode, playerId, cardIndex) {
+  const room = rooms[roomCode];
+  if (!room || !room.roundActive) return { error: "No active round." };
+
+  const currentTurn = room.currentTurn;
+  if (room.players[currentTurn].id !== playerId)
     return { error: "Not your turn." };
 
-  const card = gameState.cards[currentTurn].splice(cardIndex, 1)[0];
+  const card = room.cards[currentTurn].splice(cardIndex, 1)[0];
 
+  // Determine next turn in this order: P1 → P3 → P2 → P4 (alternating teams)
   let nextTurn;
   switch (currentTurn) {
-    case 0: nextTurn = 2; break;
-    case 1: nextTurn = 3; break;
-    case 2: nextTurn = 1; break;
-    case 3: nextTurn = 0; break;
+    case 0: nextTurn = 2; break; // Team 1 P1 → Team 2 P1
+    case 2: nextTurn = 1; break; // Team 2 P1 → Team 1 P2
+    case 1: nextTurn = 3; break; // Team 1 P2 → Team 2 P2
+    case 3: nextTurn = 0; break; // Team 2 P2 → Team 1 P1
   }
 
-  gameState.cards[nextTurn].push(card);
-  gameState.currentTurn = nextTurn;
+  room.cards[nextTurn].push(card);
+  room.currentTurn = nextTurn;
 
   return {
     message: "Card passed",
-    nextTurn: gameState.players[nextTurn].name
+    nextTurn: room.players[nextTurn].name
   };
 }
 
-function declareCarré(playerId, charade) {
-  if (!gameState.roundActive) return { error: "No active round." };
 
-  const idx = playerId - 1;
-  const cards = gameState.cards[idx];
 
+
+
+function declareCarré(roomCode, playerId, charade) {
+  const room = rooms[roomCode];
+  if (!room || !room.roundActive) return { error: "No active round." };
+
+  const idx = room.players.findIndex(p => p.id === playerId);
+  if (idx === -1) return { error: "Player not found." };
+
+  const cards = room.cards[idx];
   const isCarré = cards.every(c => c.type === cards[0].type);
   if (!isCarré) return { error: "You don’t have a Carré." };
 
   const teamIdx = idx < 2 ? 0 : 1;
-  if (gameState.charades[teamIdx] !== charade)
+  if (room.charades[teamIdx] !== charade)
     return { error: "Wrong charade." };
 
-  gameState.carreDeclaredBy = playerId;
+  room.carreDeclaredBy = playerId;
 
   return { message: `Player ${playerId} declared Carré.` };
 }
 
-function jeCoupe(playerId) {
-  if (!gameState.carreDeclaredBy)
+function jeCoupe(roomCode, playerId) {
+  const room = rooms[roomCode];
+  if (!room || !room.carreDeclaredBy)
     return { error: "No Carré has been declared yet." };
 
-  if (gameState.jeCoupeResponses.includes(playerId))
+  if (room.jeCoupeResponses.includes(playerId))
     return { error: "You already responded with Je Coupe." };
 
-  gameState.jeCoupeResponses.push(playerId);
+  room.jeCoupeResponses.push(playerId);
 
   return { message: `Player ${playerId} responded with Je Coupe.` };
 }
 
-function setCharade(teamIndex, charade) {
+function setCharade(roomCode, teamIndex, charade) {
+  const room = rooms[roomCode];
+  if (!room) return { error: "Room not found." };
+
   if (teamIndex !== 0 && teamIndex !== 1)
     return { error: "Invalid team index." };
 
-  gameState.charades[teamIndex] = charade;
+  room.charades[teamIndex] = charade;
 
   return { message: `Charade for Team ${teamIndex + 1} set to "${charade}"` };
 }
 
-function getStatus() {
-  return gameState;
+function resetGame(roomCode) {
+  if (rooms[roomCode]) {
+    rooms[roomCode] = createGameState();
+    return { message: "Game has been reset." };
+  }
+  return { error: "Room not found." };
+}
+
+function getStatus(roomCode) {
+  const room = rooms[roomCode];
+  return room || { error: "Room not found." };
 }
 
 module.exports = {
+  createRoom,
   joinGame,
   startRound,
   passCard,
   declareCarré,
   jeCoupe,
   setCharade,
+  resetGame,
   getStatus,
-  resetGame, // ✅ Export the reset function
 };

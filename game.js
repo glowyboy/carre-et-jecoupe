@@ -112,14 +112,16 @@ function passCard(roomCode, playerId, cardIndex) {
   if (currentPlayer.id !== playerId)
     return { error: "Not your turn." };
 
-  const card = room.cards[room.currentTurn].splice(cardIndex, 1)[0];
+const currentPlayerIndex = room.players.findIndex(p => p.id === playerId);
+const card = room.cards[currentPlayerIndex].splice(cardIndex, 1)[0];
 
-  // Determine next turn (wrap around after 4)
-  const nextTurn = (room.currentTurn + 1) % 4;
+const nextTurn = (room.currentTurn + 1) % 4;
+const nextPlayer = room.turnOrder[nextTurn];
+const nextPlayerIndex = room.players.findIndex(p => p.id === nextPlayer.id);
 
-  // Give card to next player in order
-  room.cards[nextTurn].push(card);
-  room.currentTurn = nextTurn;
+room.cards[nextPlayerIndex].push(card);
+room.currentTurn = nextTurn;
+
 
   return {
     message: "Card passed",

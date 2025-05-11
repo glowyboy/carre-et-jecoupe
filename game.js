@@ -53,15 +53,19 @@ function joinGame(roomCode, playerName) {
   const id = room.players.length + 1;
   room.players.push({ id, name: playerName });
 
-  if (room.players.length === 4) {
-    const shuffled = [...room.players].sort(() => Math.random() - 0.5);
-    room.players = shuffled;
-    room.teams = [
-      [shuffled[0], shuffled[1]],
-      [shuffled[2], shuffled[3]],
-    ];
-    room.currentTurn = Math.floor(Math.random() * 4);
-  }
+if (room.players.length === 4) {
+  const shuffled = [...room.players].sort(() => Math.random() - 0.5);
+  room.players = shuffled;
+
+  room.teams = [
+    [shuffled[0], shuffled[2]], // Team 1
+    [shuffled[1], shuffled[3]]  // Team 2
+  ];
+
+  // Save the passing order: P1 → P3 → P2 → P4
+  room.turnOrder = [shuffled[0], shuffled[1], shuffled[2], shuffled[3]];
+  room.currentTurn = 0;
+}
 
   return { message: `${playerName} joined.`, teams: room.teams };
 }
@@ -100,29 +104,24 @@ function passCard(roomCode, playerId, cardIndex) {
   const room = rooms[roomCode];
   if (!room || !room.roundActive) return { error: "No active round." };
 
-  const currentTurn = room.currentTurn;
-  if (room.players[currentTurn].id !== playerId)
+  const currentPlayer = room.turnOrder[room.currentTurn];
+  if (currentPlayer.id !== playerId)
     return { error: "Not your turn." };
 
-  const card = room.cards[currentTurn].splice(cardIndex, 1)[0];
+  const card = room.cards[room.currentTurn].splice(cardIndex, 1)[0];
 
-  // Determine next turn in this order: P1 → P3 → P2 → P4 (alternating teams)
-  let nextTurn;
-  switch (currentTurn) {
-    case 0: nextTurn = 2; break; // Team 1 P1 → Team 2 P1
-    case 2: nextTurn = 1; break; // Team 2 P1 → Team 1 P2
-    case 1: nextTurn = 3; break; // Team 1 P2 → Team 2 P2
-    case 3: nextTurn = 0; break; // Team 2 P2 → Team 1 P1
-  }
+  // Advance turn clockwise
+  const nextTurn = (room.currentTurn + 1) % 4;
 
   room.cards[nextTurn].push(card);
   room.currentTurn = nextTurn;
 
   return {
     message: "Card passed",
-    nextTurn: room.players[nextTurn].name
+    nextTurn: room.turnOrder[nextTurn].name
   };
 }
+
 
 
 

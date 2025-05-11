@@ -103,7 +103,6 @@ function startRound(roomCode) {
   };
 }
 
-
 function passCard(roomCode, playerId, cardIndex) {
   const room = rooms[roomCode];
   if (!room || !room.roundActive) return { error: "No active round." };
@@ -112,22 +111,27 @@ function passCard(roomCode, playerId, cardIndex) {
   if (currentPlayer.id !== playerId)
     return { error: "Not your turn." };
 
-const currentPlayerIndex = room.players.findIndex(p => p.id === playerId);
-const card = room.cards[currentPlayerIndex].splice(cardIndex, 1)[0];
+  // Find the actual player index in `room.players` to remove the card from
+  const fromIndex = room.players.findIndex(p => p.id === playerId);
+  const card = room.cards[fromIndex].splice(cardIndex, 1)[0];
 
-const nextTurn = (room.currentTurn + 1) % 4;
-const nextPlayer = room.turnOrder[nextTurn];
-const nextPlayerIndex = room.players.findIndex(p => p.id === nextPlayer.id);
+  // Advance to next turn
+  const nextTurn = (room.currentTurn + 1) % 4;
+  const nextPlayer = room.turnOrder[nextTurn];
 
-room.cards[nextPlayerIndex].push(card);
-room.currentTurn = nextTurn;
+  // Find the actual player index in `room.players` to add the card to
+  const toIndex = room.players.findIndex(p => p.id === nextPlayer.id);
+  room.cards[toIndex].push(card);
 
+  // Update turn
+  room.currentTurn = nextTurn;
 
   return {
     message: "Card passed",
-    nextTurn: room.turnOrder[nextTurn].name
+    nextTurn: nextPlayer.name
   };
 }
+
 
 
 

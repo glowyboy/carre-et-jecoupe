@@ -57,15 +57,19 @@ if (room.players.length === 4) {
   const shuffled = [...room.players].sort(() => Math.random() - 0.5);
   room.players = shuffled;
 
+  // Assign teams
   room.teams = [
     [shuffled[0], shuffled[2]], // Team 1
     [shuffled[1], shuffled[3]]  // Team 2
   ];
 
-  // Save the passing order: P1 → P3 → P2 → P4
+  // Define fixed pass order: T1P1 → T2P1 → T1P2 → T2P2
   room.turnOrder = [shuffled[0], shuffled[1], shuffled[2], shuffled[3]];
+
+  // Start with T1P1 (index 0)
   room.currentTurn = 0;
 }
+
 
   return { message: `${playerName} joined.`, teams: room.teams };
 }
@@ -110,9 +114,10 @@ function passCard(roomCode, playerId, cardIndex) {
 
   const card = room.cards[room.currentTurn].splice(cardIndex, 1)[0];
 
-  // Advance turn clockwise
+  // Determine next turn (wrap around after 4)
   const nextTurn = (room.currentTurn + 1) % 4;
 
+  // Give card to next player in order
   room.cards[nextTurn].push(card);
   room.currentTurn = nextTurn;
 
@@ -121,9 +126,6 @@ function passCard(roomCode, playerId, cardIndex) {
     nextTurn: room.turnOrder[nextTurn].name
   };
 }
-
-
-
 
 
 
